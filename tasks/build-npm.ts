@@ -4,7 +4,7 @@ const outDir = './build/npm';
 
 await emptyDir(outDir);
 
-let [version] = Deno.args;
+const [version] = Deno.args;
 if (!version) {
 	throw new Error('a version argument is required to build the npm package');
 }
@@ -21,8 +21,7 @@ await build({
 	compilerOptions: {
 		target: 'ES2020',
 		sourceMap: true,
-		strict: true,
-		lib: ['dom', 'dom.iterable'],
+		lib: ['DOM', 'DOM.Iterable'],
 		useUnknownInCatchVariables: true,
 		noImplicitAny: true,
 	},

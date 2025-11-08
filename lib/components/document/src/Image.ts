@@ -304,7 +304,11 @@ export class Image extends Component<ImageProps, ImageChild> {
 		{ archive, relationships }: ComponentContext
 	): Image {
 		// Important nodes
-		const inlineNode = evaluateXPathToFirstNode(`./${QNS.wp}inline`, node);
+		const inlineNode = evaluateXPathToFirstNode(
+			`./(${QNS.wp}inline | ${QNS.wp}anchor)`,
+			node
+		);
+
 		const picNode = evaluateXPathToFirstNode(
 			`./${QNS.a}graphic/${QNS.a}graphicData/${QNS.pic}pic`,
 			inlineNode
