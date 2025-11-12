@@ -1,6 +1,7 @@
 // Import without assignment ensures Deno does not tree-shake this component. To avoid circular
 // definitions, components register themselves in a side-effect of their module.
 import './Break.ts';
+import './Drawing.ts';
 import './FieldRangeEnd.ts';
 import './FieldRangeInstruction.ts';
 import './FieldRangeSeparator.ts';
@@ -29,6 +30,7 @@ import { QNS } from '../../../utilities/src/namespaces.ts';
 import { evaluateXPathToMap } from '../../../utilities/src/xquery.ts';
 import { Deletion } from '../../track-changes/src/Deletion.ts';
 import type { Break } from './Break.ts';
+import type { Drawing } from './Drawing.ts';
 import type { FieldRangeEnd } from './FieldRangeEnd.ts';
 import type { FieldRangeInstruction } from './FieldRangeInstruction.ts';
 import type { FieldRangeSeparator } from './FieldRangeSeparator.ts';
@@ -53,6 +55,7 @@ export type TextChild =
 	| FootnoteSeparator
 	| FootnoteContinuationSeparator
 	| Image
+	| Drawing
 	| NonBreakingHyphen
 	// eslint-disable-next-line @typescript-eslint/ban-types
 	| Symbol
@@ -77,6 +80,7 @@ export class Text extends Component<TextProps, TextChild> {
 		'FootnoteSeparator',
 		'FootnoteContinuationSeparator',
 		'Image',
+		'Drawing',
 		'NonBreakingHyphen',
 		'Symbol',
 		'Tab',

@@ -41,6 +41,16 @@ export {
 	type CellProps,
 } from './lib/components/document/src/Cell.ts';
 export {
+	Drawing,
+	type DrawingChild,
+	type DrawingProps,
+} from './lib/components/document/src/Drawing.ts';
+export {
+	Anchor,
+	type AnchorChild,
+	type AnchorProps,
+} from './lib/components/document/src/Anchor.ts';
+export {
 	Field,
 	type FieldChild,
 	type FieldProps,
@@ -71,6 +81,11 @@ export {
 	type FootnoteReferenceProps,
 } from './lib/components/document/src/FootnoteReference.ts';
 export {
+	GraphicData,
+	type GraphicDataChild,
+	type GraphicDataProps,
+} from './lib/components/document/src/GraphicData.ts';
+export {
 	Hyperlink,
 	type HyperlinkChild,
 	type HyperlinkProps,
@@ -81,6 +96,11 @@ export {
 	type ImageProps,
 } from './lib/components/document/src/Image.ts';
 export {
+	Inline,
+	type InlineChild,
+	type InlineProps,
+} from './lib/components/document/src/Inline.ts';
+export {
 	NonBreakingHyphen,
 	type NonBreakingHyphenChild,
 	type NonBreakingHyphenProps,
@@ -90,6 +110,12 @@ export {
 	type ParagraphChild,
 	type ParagraphProps,
 } from './lib/components/document/src/Paragraph.ts';
+export {
+	Picture,
+	type PictureChild,
+	type PictureProps,
+} from './lib/components/document/src/Picture.ts';
+
 export {
 	Row,
 	type RowChild,

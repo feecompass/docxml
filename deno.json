@@ -17,6 +17,9 @@
 	},
 	"imports": {
 		"@deno/dnt": "jsr:@deno/dnt@^0.42.3",
+		"@std/crypto": "jsr:@std/crypto@^1.0.5",
+		"@std/encoding": "jsr:@std/encoding@^1.0.10",
+		"@std/testing": "jsr:@std/testing@^1.0.16",
 		"@util-path": "./lib/utilities/src/path.ts",
 
 		"eslint/config": "npm:eslint@9.30.1/config",

@@ -79,4 +79,5 @@ export enum RelationshipType {
 	// Legacy template (.dot)
 	downRev = 'http://schemas.microsoft.com/office/2006/relationships/downRev',
 	graphicFrameDoc = 'http://schemas.microsoft.com/office/2006/relationships/graphicFrameDoc',
+	thumbnail = 'http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail',
 }
