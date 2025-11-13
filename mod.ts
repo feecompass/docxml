@@ -21,6 +21,11 @@ export {
 	type CommentRangeStartProps,
 } from './lib/components/comments/src/CommentRangeStart.ts';
 export {
+	Anchor,
+	type AnchorChild,
+	type AnchorProps,
+} from './lib/components/document/src/Anchor.ts';
+export {
 	BookmarkRangeEnd,
 	type BookmarkRangeEndChild,
 	type BookmarkRangeEndProps,
@@ -45,11 +50,6 @@ export {
 	type DrawingChild,
 	type DrawingProps,
 } from './lib/components/document/src/Drawing.ts';
-export {
-	Anchor,
-	type AnchorChild,
-	type AnchorProps,
-} from './lib/components/document/src/Anchor.ts';
 export {
 	Field,
 	type FieldChild,
@@ -86,6 +86,11 @@ export {
 	type GraphicDataProps,
 } from './lib/components/document/src/GraphicData.ts';
 export {
+	Group,
+	type GroupChild,
+	type GroupProps,
+} from './lib/components/document/src/Group.ts';
+export {
 	Hyperlink,
 	type HyperlinkChild,
 	type HyperlinkProps,
@@ -100,6 +105,11 @@ export {
 	type InlineChild,
 	type InlineProps,
 } from './lib/components/document/src/Inline.ts';
+export {
+	TextBox,
+	type TextBoxChild,
+	type TextBoxProps,
+} from './lib/components/document/src/TextBox.ts';
 export {
 	NonBreakingHyphen,
 	type NonBreakingHyphenChild,

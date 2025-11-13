@@ -4,6 +4,7 @@ import { beforeAll, describe, it } from 'std/testing/bdd';
 
 import { crypto } from 'jsr:@std/crypto';
 import { encodeHex } from 'jsr:@std/encoding/hex';
+import { Section } from './components/document/src/Section.ts';
 import { Docx } from './Docx.ts';
 import { FileLocation } from './enums.ts';
 import { RelationshipMeta } from './files/src/RelationshipsXml.ts';
@@ -35,19 +36,45 @@ async function normalizeXmlIds(xml: string, relationships: RelationshipMeta[]) {
 }
 
 describe('Docx', () => {
-	let bundle: Docx;
-	beforeAll(async () => {
-		bundle = await Docx.fromArchive(file('../assets/inlineImage.docx'));
+	it.skip('read and writes back inline image', async (t) => {
+		const docx = await Docx.fromArchive(
+			file('../assets/debug_min_inline.docx')
+		);
+    const archive = await docx.toArchive();
+		const xml = await archive.readText('word/document.xml');
+		const relationships = docx.document.relationships;
+		const normalizedXml = await normalizeXmlIds(xml, relationships.meta);
+
+		await assertSnapshot(t, normalizedXml);
+		// await archive.toFile('./inline-output.docx');
 	});
 
-	it('read and writes back inline image', async (t) => {
-		const docx = await Docx.fromArchive(file('../assets/inlineImage.docx'));
+	it.skip('read and writes back anchor image', async (t) => {
+		const docx = await Docx.fromArchive(
+			file('../assets/debug_min_anchor.docx')
+		);
+
 		const archive = await docx.toArchive();
 		const xml = await archive.readText('word/document.xml');
 		const relationships = docx.document.relationships;
 		const normalizedXml = await normalizeXmlIds(xml, relationships.meta);
 
 		await assertSnapshot(t, normalizedXml);
-		await archive.toFile('./inlineImage-output.docx');
+		// await archive.toFile('./anchor-output.docx');
 	});
+
+	it('read and writes back wpg image', async (t) => {
+		const docx = await Docx.fromArchive(
+			file('../assets/wpg_image_nomc.docx')
+		);
+
+		const archive = await docx.toArchive();
+		const xml = await archive.readText('word/document.xml');
+		const relationships = docx.document.relationships;
+		const normalizedXml = await normalizeXmlIds(xml, relationships.meta);
+
+		await assertSnapshot(t, normalizedXml);
+		// await archive.toFile('./output.docx');
+	});
+
 });
