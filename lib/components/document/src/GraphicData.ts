@@ -69,8 +69,6 @@ export class GraphicData extends Component<GraphicDataProps, GraphicDataChild> {
 			);
 		}
 
-		console.log('graphic data child name', picOrWpgNode.nodeName);
-
 		if (picOrWpgNode.nodeName === `pic:pic` || picOrWpgNode.nodeName === 'pic') {
 			const picture = Picture.fromNode(picOrWpgNode, context);
 			return new GraphicData({}, picture);

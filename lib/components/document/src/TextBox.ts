@@ -47,7 +47,6 @@ export class TextBox extends Component<TextBoxProps, TextBoxChild> {
 	public override async toNode(ancestry: ComponentAncestor[]): Promise<Node> {
 		const { title, width, height, offsetX, offsetY, fill, bodyPr } =
 			this.props;
-		console.log('TextBox bodyPr', bodyPr);
 		return create(
 			`
 				element ${QNS.wps}wsp {
