@@ -106,11 +106,6 @@ export {
 	type InlineProps,
 } from './lib/components/document/src/Inline.ts';
 export {
-	TextBox,
-	type TextBoxChild,
-	type TextBoxProps,
-} from './lib/components/document/src/TextBox.ts';
-export {
 	NonBreakingHyphen,
 	type NonBreakingHyphenChild,
 	type NonBreakingHyphenProps,
@@ -125,6 +120,11 @@ export {
 	type PictureChild,
 	type PictureProps,
 } from './lib/components/document/src/Picture.ts';
+export {
+	TextBox,
+	type TextBoxChild,
+	type TextBoxProps,
+} from './lib/components/document/src/TextBox.ts';
 
 export {
 	Row,
@@ -230,4 +230,5 @@ export { type NumberingXml } from './lib/files/src/NumberingXml.ts';
 export { type RelationshipsXml } from './lib/files/src/RelationshipsXml.ts';
 export { type SettingsXml } from './lib/files/src/SettingsXml.ts';
 export { type StylesXml } from './lib/files/src/StylesXml.ts';
+export { ThemeXml } from './lib/files/src/ThemeXml.ts';
 export { type ChangeInformation } from './lib/utilities/src/changes.ts';
