@@ -32,6 +32,7 @@ export type TextBoxProps = {
 		color: string;
 	};
 	bodyPr?: {
+    vert?: 'horz' | 'vert' | 'vert270' | 'eaVert' | 'wordArtVertRtl' | 'wordArtVert' | 'mongolianVert' | null;
 		lIns?: Length;
 		rIns?: Length;
 		tIns?: Length;
@@ -85,6 +86,7 @@ export class TextBox extends Component<TextBoxProps, TextBoxChild> {
 						}
 					},
 					element ${QNS.wps}bodyPr {
+						if (exists($vert)) then attribute vert { $vert } else (),
 						if (exists($lIns)) then attribute lIns { $lIns } else (),
 						if (exists($tIns)) then attribute tIns { $tIns } else (),
 						if (exists($rIns)) then attribute rIns { $rIns } else (),
@@ -101,6 +103,7 @@ export class TextBox extends Component<TextBoxProps, TextBoxChild> {
 				extX: Math.round(width.emu),
 				extY: Math.round(height.emu),
 				fillColor: fill?.type === 'solid' ? fill.color : null,
+        vert: bodyPr?.vert ?? null,
 				lIns: bodyPr?.lIns?.emu ?? null,
 				rIns: bodyPr?.rIns?.emu ?? null,
 				tIns: bodyPr?.tIns?.emu ?? null,
