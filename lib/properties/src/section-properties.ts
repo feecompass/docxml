@@ -89,10 +89,81 @@ export type SectionProperties = {
 	isTitlePage?: null | boolean;
 
 	/**
+	 * Maps to w:type (CT_SectType / ST_SectionMark).
+	 * Controls whether the following section starts on a new page.
+	 */
+	sectionType?:
+		| null
+		| 'nextPage'
+		| 'nextColumn'
+		| 'continuous'
+		| 'evenPage'
+		| 'oddPage';
+
+	/**
+	 * @see docs/ecma-376-5th/markup-reference/wml.xsd — CT_PageNumber
+	 */
+	pageNumbering?: null | {
+		/** w:start — 1-based page number at section start. Verosetta uses 1 for FIG. */
+		start?: number;
+		/**
+		 * w:fmt — page number format.
+		 * Omit on write when decimal (schema default). On read, omit property when attribute absent.
+		 */
+		format?:
+			| 'decimal'
+			| 'upperRoman'
+			| 'lowerRoman'
+			| 'upperLetter'
+			| 'lowerLetter'
+			| 'ordinal'
+			| 'cardinalText';
+		/** w:chapStyle — style whose heading level drives chapter numbering. */
+		chapterStyle?: number;
+		/** w:chapSep — separator between chapter number and page number. */
+		chapterSeparator?: 'hyphen' | 'period' | 'colon' | 'emDash' | 'enDash';
+	};
+
+	/**
+	 * Maps to w:lnNumType (CT_LineNumber).
+	 * @see docs/ecma-376-5th/markup-reference/wml.xsd — CT_LineNumber
+	 */
+	lineNumbering?: null | {
+		/** w:countBy — number interval between displayed line numbers. Verosetta uses 5. */
+		countBy?: number;
+		/** w:start — first line number (default 1 in OOXML). */
+		start?: number;
+		/** w:distance — margin between line number and text (twips). */
+		distance?: Length;
+		/** w:restart — when numbering restarts within the section. */
+		restart?: 'newPage' | 'newSection' | 'continuous';
+	};
+
+	/**
 	 * Change tracking info about this section--used for Word's track changes feature.
 	 */
 	change?: null | (Omit<SectionProperties, 'change'> & ChangeInformation);
 };
+
+/**
+ * Collapse XPath noise when a numbering element is present but has no attributes.
+ * Requires an exists(./w:pgNumType) / exists(./w:lnNumType) guard in XPath so absent
+ * elements do not produce a key — otherwise absent vs empty cannot be distinguished.
+ */
+function normaliseSectionNumberingProp<T extends Record<string, unknown>>(
+	obj: T | undefined,
+): T | Record<string, never> | undefined {
+	if (obj === undefined) {
+		return undefined;
+	}
+	const cleaned = Object.fromEntries(
+		Object.entries(obj).filter(
+			([, v]) => v !== undefined && v !== null && v !== '',
+		),
+	) as T;
+	const hasValue = Object.keys(cleaned).length > 0;
+	return hasValue ? cleaned : {};
+}
 
 type IntermediateProps = Omit<SectionProperties, 'change'> & {
 	change?: {
@@ -104,7 +175,7 @@ type IntermediateProps = Omit<SectionProperties, 'change'> & {
 };
 
 export function sectionPropertiesFromNode(
-	node?: Node | null
+	node?: Node | null,
 ): SectionProperties {
 	if (!node) {
 		return {};
@@ -148,6 +219,19 @@ export function sectionPropertiesFromNode(
 						"gutter": docxml:length(./${QNS.w}pgMar/@${QNS.w}gutter, 'twip')
 					},
 					"isTitlePage": exists(./${QNS.w}titlePg) and (not(./${QNS.w}titlePg/@${QNS.w}val) or docxml:st-on-off(./${QNS.w}titlePg/@${QNS.w}val)), 
+					"sectionType": ./${QNS.w}type/@${QNS.w}val/string(),
+					"pageNumbering": if (exists(./${QNS.w}pgNumType)) then map {
+						"start": ./${QNS.w}pgNumType/@${QNS.w}start/number(),
+						"format": ./${QNS.w}pgNumType/@${QNS.w}fmt/string(),
+						"chapterStyle": ./${QNS.w}pgNumType/@${QNS.w}chapStyle/number(),
+						"chapterSeparator": ./${QNS.w}pgNumType/@${QNS.w}chapSep/string()
+					} else (),
+					"lineNumbering": if (exists(./${QNS.w}lnNumType)) then map {
+						"countBy": ./${QNS.w}lnNumType/@${QNS.w}countBy/number(),
+						"start": ./${QNS.w}lnNumType/@${QNS.w}start/number(),
+						"distance": docxml:length(./${QNS.w}lnNumType/@${QNS.w}distance, 'twip'),
+						"restart": ./${QNS.w}lnNumType/@${QNS.w}restart/string()
+					} else (),
 					"change": ./${QNS.w}sectPrChange/map { 
 						"id": @${QNS.w}id/number(), 
 						"author": @${QNS.w}author/string(),
@@ -155,9 +239,26 @@ export function sectionPropertiesFromNode(
 						"node": ./${QNS.w}sectPr
 					}
 				}`,
-				node
-		  ) || {}
+				node,
+			) || {}
 		: {};
+
+	if ('pageNumbering' in props && props.pageNumbering !== null) {
+		const normalised = normaliseSectionNumberingProp(props.pageNumbering);
+		if (normalised === undefined) {
+			delete props.pageNumbering;
+		} else {
+			props.pageNumbering = normalised;
+		}
+	}
+	if ('lineNumbering' in props && props.lineNumbering !== null) {
+		const normalised = normaliseSectionNumberingProp(props.lineNumbering);
+		if (normalised === undefined) {
+			delete props.lineNumbering;
+		} else {
+			props.lineNumbering = normalised;
+		}
+	}
 
 	if (props.change) {
 		props.change = {
@@ -177,6 +278,9 @@ export function sectionPropertiesFromNode(
 export function sectionPropertiesToNode(data: SectionProperties = {}): Node {
 	return create(
 		`element ${QNS.w}sectPr {
+			if (exists($sectionType)) then element ${QNS.w}type {
+				attribute ${QNS.w}val { $sectionType }
+			} else (),
 			if (exists($footnotes)) then element ${QNS.w}footnotePr {
 				if (exists($footnotes('numberingFormat')))
 				then element ${QNS.w}numFmt { 
@@ -269,6 +373,26 @@ export function sectionPropertiesToNode(data: SectionProperties = {}): Node {
 					round($pageMargin('gutter')('twip'))
 				} else ()
 			} else (),
+			if (exists($lineNumbering)) then element ${QNS.w}lnNumType {
+				if (exists($lineNumbering('countBy')))
+				then attribute ${QNS.w}countBy { $lineNumbering('countBy') } else (),
+				if (exists($lineNumbering('start')))
+				then attribute ${QNS.w}start { $lineNumbering('start') } else (),
+				if (exists($lineNumbering('distance')))
+				then attribute ${QNS.w}distance { round($lineNumbering('distance')('twip')) } else (),
+				if (exists($lineNumbering('restart')))
+				then attribute ${QNS.w}restart { $lineNumbering('restart') } else ()
+			} else (),
+			if (exists($pageNumbering)) then element ${QNS.w}pgNumType {
+				if (exists($pageNumbering('start')))
+				then attribute ${QNS.w}start { $pageNumbering('start') } else (),
+				if (exists($pageNumbering('format')) and $pageNumbering('format') != 'decimal')
+				then attribute ${QNS.w}fmt { $pageNumbering('format') } else (),
+				if (exists($pageNumbering('chapterStyle')))
+				then attribute ${QNS.w}chapStyle { $pageNumbering('chapterStyle') } else (),
+				if (exists($pageNumbering('chapterSeparator')))
+				then attribute ${QNS.w}chapSep { $pageNumbering('chapterSeparator') } else ()
+			} else (),
 			if (exists($isTitlePage)) then element ${QNS.w}titlePg { attribute ${QNS.w}val { "1" } } else (), 
 			if (exists($change)) then element ${QNS.w}sectPrChange { 
 				attribute ${QNS.w}id { $change('id') }, 
@@ -284,7 +408,7 @@ export function sectionPropertiesToNode(data: SectionProperties = {}): Node {
 							first: data.headers,
 							even: data.headers,
 							odd: data.headers,
-					  }
+						}
 					: data.headers || {},
 			footers:
 				typeof data.footers === 'string'
@@ -292,7 +416,7 @@ export function sectionPropertiesToNode(data: SectionProperties = {}): Node {
 							first: data.footers,
 							even: data.footers,
 							odd: data.footers,
-					  }
+						}
 					: data.footers || {},
 			footnotes: data.footnotes || {},
 			columns: data.columns || {},
@@ -300,6 +424,9 @@ export function sectionPropertiesToNode(data: SectionProperties = {}): Node {
 			pageHeight: data.pageHeight || null,
 			pageMargin: data.pageMargin || null,
 			pageOrientation: data.pageOrientation || null,
+			sectionType: data.sectionType || null,
+			pageNumbering: data.pageNumbering ?? null,
+			lineNumbering: data.lineNumbering ?? null,
 			isTitlePage: data.isTitlePage || null,
 			change: data.change
 				? {
@@ -311,8 +438,8 @@ export function sectionPropertiesToNode(data: SectionProperties = {}): Node {
 							? data.change.date.toISOString()
 							: undefined,
 						node: sectionPropertiesToNode(data.change),
-				  }
+					}
 				: null,
-		}
+		},
 	);
 }

@@ -40,6 +40,9 @@ await build({
 			type: 'git',
 			url: 'https://github.com/feecompass/docxml.git',
 		},
+    publishConfig: {
+      registry: 'https://npm.pkg.github.com',
+    }
 	},
 });
 

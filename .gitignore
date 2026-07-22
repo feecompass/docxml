@@ -12,3 +12,4 @@ package-lock.json
 /*.docx
 /coverage
 /build
+.npmrc

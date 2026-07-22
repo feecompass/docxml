@@ -1,5 +1,7 @@
-import { describe } from 'std/testing/bdd';
+import { expect } from 'std/expect';
+import { describe, it } from 'std/testing/bdd';
 
+import { create } from '../../utilities/src/dom.ts';
 import { twip } from '../../utilities/src/length.ts';
 import { ALL_NAMESPACE_DECLARATIONS } from '../../utilities/src/namespaces.ts';
 import {
@@ -14,12 +16,12 @@ import {
 
 const test = createXmlRoundRobinTest<SectionProperties>(
 	sectionPropertiesFromNode,
-	sectionPropertiesToNode
+	sectionPropertiesToNode,
 );
 
 const reverseTest = createObjectRoundRobinTest<SectionProperties>(
 	sectionPropertiesToNode,
-	sectionPropertiesFromNode
+	sectionPropertiesFromNode,
 );
 
 const date = new Date();
@@ -55,7 +57,30 @@ describe('Section formatting', () => {
 				footer: twip(1000),
 				gutter: twip(1000),
 			},
-		}
+		},
+	);
+});
+
+describe('Section type', () => {
+	reverseTest(
+		{ sectionType: 'continuous' },
+		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+			<w:type w:val="continuous"/>
+		</w:sectPr>`,
+	);
+
+	reverseTest(
+		{ sectionType: 'nextPage' },
+		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+			<w:type w:val="nextPage"/>
+		</w:sectPr>`,
+	);
+
+	test(
+		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+			<w:type w:val="continuous"/>
+		</w:sectPr>`,
+		{ sectionType: 'continuous' },
 	);
 });
 
@@ -79,7 +104,7 @@ describe('Section property change', () => {
 				pageWidth: twip(12240),
 				pageHeight: twip(15840),
 			},
-		}
+		},
 	);
 
 	// Node with id and date, but without author
@@ -100,7 +125,7 @@ describe('Section property change', () => {
 				pageWidth: twip(12240),
 				pageHeight: twip(15840),
 			},
-		}
+		},
 	);
 	// Node with id and author, but without date
 	test(
@@ -120,7 +145,7 @@ describe('Section property change', () => {
 				pageWidth: twip(12240),
 				pageHeight: twip(15840),
 			},
-		}
+		},
 	);
 
 	// Node with id, but without date and author
@@ -140,7 +165,7 @@ describe('Section property change', () => {
 				pageWidth: twip(12240),
 				pageHeight: twip(15840),
 			},
-		}
+		},
 	);
 });
 
@@ -157,7 +182,7 @@ describe('Section column formatting for equally sized columns', () => {
 				columnSpace: twip(720),
 				columnDefs: [],
 			},
-		}
+		},
 	);
 });
 
@@ -182,7 +207,7 @@ describe('Section column formatting for differently sized columns', () => {
 					{ columnWidth: twip(2880) },
 				],
 			},
-		}
+		},
 	);
 });
 
@@ -196,7 +221,7 @@ describe('Section column formatting for with missing properties', () => {
 		},
 		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
 			<w:cols w:num="3" w:equalWidth="1" />
-		</w:sectPr>`
+		</w:sectPr>`,
 	);
 
 	reverseTest(
@@ -213,7 +238,7 @@ describe('Section column formatting for with missing properties', () => {
 				<w:col w:w="1440" w:space="720" />
 				<w:col w:w="1440"/>
 			</w:cols>
-		</w:sectPr>`
+		</w:sectPr>`,
 	);
 });
 
@@ -235,7 +260,7 @@ describe('Section header/footer references', () => {
 				even: null,
 				odd: null,
 			},
-		}
+		},
 	);
 });
 
@@ -245,7 +270,7 @@ describe('Section titlePg', () => {
 		</w:sectPr>`,
 		{
 			isTitlePage: false,
-		}
+		},
 	);
 	test(
 		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
@@ -253,7 +278,7 @@ describe('Section titlePg', () => {
 		</w:sectPr>`,
 		{
 			isTitlePage: true,
-		}
+		},
 	);
 	test(
 		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
@@ -261,7 +286,7 @@ describe('Section titlePg', () => {
 		</w:sectPr>`,
 		{
 			isTitlePage: true,
-		}
+		},
 	);
 	test(
 		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
@@ -269,6 +294,143 @@ describe('Section titlePg', () => {
 		</w:sectPr>`,
 		{
 			isTitlePage: false,
-		}
+		},
+	);
+});
+
+describe('Section page and line numbering', () => {
+	test(
+		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+			<w:pgNumType w:start="1"/>
+		</w:sectPr>`,
+		{
+			pageNumbering: { start: 1 },
+		},
+	);
+
+	test(
+		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+			<w:pgNumType/>
+		</w:sectPr>`,
+		{
+			pageNumbering: {},
+		},
+	);
+
+	test(
+		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+			<w:pgNumType
+				w:start="3"
+				w:fmt="upperRoman"
+				w:chapStyle="2"
+				w:chapSep="colon"
+			/>
+		</w:sectPr>`,
+		{
+			pageNumbering: {
+				start: 3,
+				format: 'upperRoman',
+				chapterStyle: 2,
+				chapterSeparator: 'colon',
+			},
+		},
+	);
+
+	it('omits format when w:fmt attribute is absent', () => {
+		const result = sectionPropertiesFromNode(
+			create(
+				`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+					<w:pgNumType w:start="1"/>
+				</w:sectPr>`,
+			),
+		);
+		expect(result.pageNumbering?.start).toBe(1);
+		expect('format' in (result.pageNumbering || {})).toBe(false);
+	});
+
+	test(
+		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+			<w:lnNumType w:countBy="5"/>
+		</w:sectPr>`,
+		{
+			lineNumbering: { countBy: 5 },
+		},
+	);
+
+	test(
+		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+			<w:lnNumType
+				w:countBy="5"
+				w:start="10"
+				w:distance="360"
+				w:restart="continuous"
+			/>
+		</w:sectPr>`,
+		{
+			lineNumbering: {
+				countBy: 5,
+				start: 10,
+				distance: twip(360),
+				restart: 'continuous',
+			},
+		},
+	);
+
+	test(
+		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+			<w:lnNumType w:countBy="5"/>
+			<w:pgNumType w:start="1"/>
+		</w:sectPr>`,
+		{
+			lineNumbering: { countBy: 5 },
+			pageNumbering: { start: 1 },
+		},
+	);
+
+	reverseTest(
+		{ pageNumbering: { start: 1 } },
+		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+			<w:pgNumType w:start="1"/>
+		</w:sectPr>`,
+	);
+
+	reverseTest(
+		{ lineNumbering: { countBy: 5 } },
+		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+			<w:lnNumType w:countBy="5"/>
+		</w:sectPr>`,
+	);
+
+	reverseTest(
+		{ pageNumbering: null },
+		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+		</w:sectPr>`,
+	);
+
+	reverseTest(
+		{ pageNumbering: {} },
+		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+			<w:pgNumType/>
+		</w:sectPr>`,
+	);
+
+	test(
+		`<w:sectPr ${ALL_NAMESPACE_DECLARATIONS}>
+			<w:pgSz w:orient="portrait"/>
+			<w:sectPrChange w:id="0" w:author="Gabe" w:date="${date.toISOString()}">
+				<w:sectPr>
+					<w:pgNumType w:start="1"/>
+				</w:sectPr>
+			</w:sectPrChange>
+		</w:sectPr>`,
+		{
+			pageOrientation: 'portrait',
+			change: {
+				id: 0,
+				author: 'Gabe',
+				date: date,
+				pageNumbering: { start: 1 },
+			},
+		},
 	);
 });

@@ -17,6 +17,23 @@ import {
 } from '../../utilities/src/xquery.ts';
 import { type File, RelationshipsXml } from './RelationshipsXml.ts';
 
+export type CompatSetting = {
+	/** w:compatSetting/@w:name */
+	name: string;
+	/** w:compatSetting/@w:uri */
+	uri: string;
+	/** w:compatSetting/@w:val */
+	val: string;
+};
+
+export type CompatibilitySettings = {
+	/**
+	 * Ordered list of w:compatSetting children.
+	 * Empty array is equivalent to null (omit w:compat).
+	 */
+	settings: CompatSetting[];
+};
+
 export type SettingsI = {
 	isTrackChangesEnabled: boolean;
 	/**
@@ -32,6 +49,8 @@ export type SettingsI = {
 	defaultTabStop: Length | null;
 
 	footnoteProperties?: FootnoteProps | null;
+
+	compatibility: CompatibilitySettings | null;
 };
 
 const DEFAULT_SETTINGS: SettingsI = {
@@ -40,6 +59,7 @@ const DEFAULT_SETTINGS: SettingsI = {
 	attachedTemplate: null,
 	defaultTabStop: null,
 	footnoteProperties: null,
+	compatibility: null,
 };
 
 enum SettingType {
@@ -98,7 +118,21 @@ const settingsMeta: Array<SettingMeta> = [
 		ooxmlLocalName: 'footnotePr',
 		ooxmlType: SettingType.Formatting,
 	},
+	{
+		docxmlName: 'compatibility',
+		ooxmlLocalName: 'compat',
+		ooxmlType: SettingType.Formatting,
+	},
 ];
+
+function normalizeCompatibility(
+	value: CompatibilitySettings | null,
+): CompatibilitySettings | null {
+	if (!value || value.settings.length === 0) {
+		return null;
+	}
+	return value;
+}
 
 export class SettingsXml extends XmlFileWithContentTypes {
 	public static override contentType = FileMime.settings;
@@ -110,9 +144,9 @@ export class SettingsXml extends XmlFileWithContentTypes {
 	public constructor(
 		location: string,
 		relationships: RelationshipsXml = new RelationshipsXml(
-			`${dirname(location)}/_rels/${basename(location)}.rels`
+			`${dirname(location)}/_rels/${basename(location)}.rels`,
 		),
-		settings: Partial<SettingsI> = {}
+		settings: Partial<SettingsI> = {},
 	) {
 		super(location);
 		this.relationships = relationships;
@@ -124,7 +158,7 @@ export class SettingsXml extends XmlFileWithContentTypes {
 	 */
 	public set<Key extends keyof SettingsI>(
 		key: Key,
-		value: SettingsI[Key]
+		value: SettingsI[Key],
 	): void {
 		const meta = settingsMeta.find((meta) => meta.docxmlName === key);
 		if (!meta) {
@@ -134,9 +168,13 @@ export class SettingsXml extends XmlFileWithContentTypes {
 			this.#props[key] = value
 				? (this.relationships.add(
 						meta.ooxmlRelationshipType,
-						value as string
-				  ) as SettingsI[Key])
+						value as string,
+					) as SettingsI[Key])
 				: value;
+		} else if (key === 'compatibility') {
+			this.#props[key] = normalizeCompatibility(
+				value as CompatibilitySettings | null,
+			) as SettingsI[Key];
 		} else {
 			this.#props[key] = value;
 		}
@@ -153,8 +191,8 @@ export class SettingsXml extends XmlFileWithContentTypes {
 		if (meta.ooxmlType === SettingType.Relationship) {
 			return this.#props[key]
 				? (this.relationships.getTarget(
-						this.#props[key] as string
-				  ) as SettingsI[Key])
+						this.#props[key] as string,
+					) as SettingsI[Key])
 				: (this.#props[key] as SettingsI[Key]);
 		} else {
 			return this.#props[key];
@@ -212,11 +250,21 @@ export class SettingsXml extends XmlFileWithContentTypes {
 							attribute ${QNS.w}val { map:get($defaultTabStop, 'twip') }
 						}`
 							: '()'
-					}
+					},
+					if (exists($compatibility) and exists($compatibility('settings'))
+						and array:size($compatibility('settings')) > 0)
+					then element ${QNS.w}compat {
+						for $s in array:flatten($compatibility('settings'))
+						return element ${QNS.w}compatSetting {
+							attribute ${QNS.w}name { $s('name') },
+							attribute ${QNS.w}uri { $s('uri') },
+							attribute ${QNS.w}val { $s('val') }
+						}
+					} else ()
 				}
 			</w:settings>`,
 			this.#props,
-			true
+			true,
 		);
 	}
 
@@ -236,18 +284,18 @@ export class SettingsXml extends XmlFileWithContentTypes {
 	public static override async fromArchive(
 		archive: Archive,
 		contentTypes: ContentTypesXml,
-		location: string
+		location: string,
 	): Promise<SettingsXml> {
 		let relationships;
 
 		const relationshipsLocation = `${dirname(location)}/_rels/${basename(
-			location
+			location,
 		)}.rels`;
 		try {
 			relationships = await RelationshipsXml.fromArchive(
 				archive,
 				contentTypes,
-				relationshipsLocation
+				relationshipsLocation,
 			);
 		} catch (_error: unknown) {
 			// console.error(
@@ -263,21 +311,37 @@ export class SettingsXml extends XmlFileWithContentTypes {
 				"isTrackChangesEnabled": docxml:ct-on-off(./${QNS.w}trackChanges),
 				"evenAndOddHeaders": docxml:ct-on-off(./${QNS.w}evenAndOddHeaders)
 			}`,
-			xml
+			xml,
 		);
 
 		const defaultTabStopTwips = evaluateXPathToNumber(
 			`number(/*/${QNS.w}defaultTabStop/@${QNS.w}val)`,
-			xml
+			xml,
 		);
 		if (defaultTabStopTwips !== null) {
 			settings.defaultTabStop = twip(defaultTabStopTwips);
 		}
 
+		const compatibility = evaluateXPathToMap<CompatibilitySettings>(
+			`/${QNS.w}settings/map {
+				"settings": array {
+					./${QNS.w}compat/${QNS.w}compatSetting/map {
+						"name": @${QNS.w}name/string(),
+						"uri": @${QNS.w}uri/string(),
+						"val": @${QNS.w}val/string()
+					}
+				}
+			}`,
+			xml,
+		);
+		if (compatibility.settings.length > 0) {
+			settings.compatibility = compatibility;
+		}
+
 		return new SettingsXml(
 			location,
 			relationships || new RelationshipsXml(relationshipsLocation),
-			settings
+			settings,
 		);
 	}
 }
